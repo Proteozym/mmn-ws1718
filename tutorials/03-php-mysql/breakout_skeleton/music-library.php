@@ -76,9 +76,9 @@ if(isset($_POST['submit'])){
 }
 
 ?>
-
-
-
+<?php
+    $dbHandler->insertAlbum("test", "test");
+?>
 <table class="albums">
     <thead>
     <tr>

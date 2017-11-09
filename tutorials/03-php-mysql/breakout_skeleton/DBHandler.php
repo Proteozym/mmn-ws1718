@@ -12,9 +12,12 @@ class DBHandler
      * @param $db String name of the database.
      */
     function __construct($host,$user,$password,$db){
-
-        //TODO create the database connection.
-        //TODO make sure the table 'albums' exists by calling ensureAlbumsTable()
+        $this->connection = new mysqli($host,$user,$password, $db);
+        if (mysqli_connect_errno()) {
+            die("Connection failed: " . mysqli_connect_error());
+        } 
+        $this->ensureAlbumsTable();
+        $this->ensureArtistsTable();
     }
 
     /*********************
@@ -27,9 +30,20 @@ class DBHandler
      * @param $albumTitle String title of the album
      * @return bool true for success, false for error
      */
-    function insertAlbum($artistName,$albumTitle){
+    function insertAlbum($artistName, $albumTitle){
         if($this->connection){
-            // TODO insert the album via mysqli
+            
+            $query_selectArtist = "SELECT id FROM artist WHERE name = ?";
+            
+            if($selectStatement = $this->connection->prepare($query_selectArtist)) {           
+                $selectStatement->bind_param("s", $artistName);
+                $selectStatement->execute();
+                echo ("in");
+                $selectStatement->bind_result($name);
+                if (count($selectStatement->fetch()) > 0) {
+                    echo $name;
+                }
+            }
         }
         return false;
     }
@@ -39,10 +53,31 @@ class DBHandler
      * before any interaction occurs with it.
      */
     function ensureAlbumsTable(){
-        if($this->connection){
-            // TODO create table if it doesn't exist.
+        if($this->connection && !$this->tableExists('albums')) {
+
+            $query = "CREATE TABLE `albums` (`album_id` INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY, `album_name` VARCHAR(30), `artist_fid` INT(11))";
+            $this->connection->query($query);
+            
         }
     }
+
+    /**
+     * makes sure that the artists table is present in the database
+     * before any interaction occurs with it.
+     */
+    function ensureArtistsTable(){
+        if($this->connection && !$this->tableExists('artist')) {
+            $query = "CREATE TABLE artist(id INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY, name VARCHAR(30))";
+            $this->connection->query($query);
+            
+        }
+    }
+    function tableExists($table) {
+        $res = $this->connection->query("SHOW TABLES LIKE '$table'");  
+        
+        if (!$res) return false;
+        return true;        
+      }
 
     /**
      * @return array of rows (id, artist, title)
