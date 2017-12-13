@@ -1,0 +1,529 @@
+
+
+<!--<!doctype html>
+
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+
+  <title>InfoVis Project</title>
+  <meta name="description" content="InfoVis Project">
+  <meta name="author" content="Jonas Safranek">
+
+  <link rel="stylesheet" href="css/styles.css?v=1.0">
+
+  <script src="https://d3js.org/d3.v4.js"></script>
+</head>
+
+<body>
+  <script src="js/scripts.js"></script>
+</body>
+</html>-->
+
+<!DOCTYPE html>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/22CA4304-2DAB-B842-AC48-2E6DE58CE748/main.js" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://gc.kis.v2.scr.kaspersky-labs.com/847EC85ED6E2-84CA-248B-BAD2-4034AC22/abn/main.css"/><script src="https://d3js.org/d3.v4.min.js"></script>
+<style>
+
+	    html, body {
+		    margin: 0;
+		    padding: 0;
+		    height: 100%;
+		    width: 100%;
+
+            font-family: Arial, Helvetica, sans-serif;
+	    }
+
+	    text {
+		    font-family: arial;
+		    font-size: 12px;
+	    }
+
+
+	    path.line {
+		    fill: none;
+		    stroke: pink;
+		    stroke-width: 3px;
+	    }
+
+        path.line.b {
+		    fill: none;
+		    stroke: royalblue;
+		    stroke-width: 3px;
+	    }
+
+		.axis path,
+		.axis line {
+		  fill: none;
+		  stroke: slategray;
+		  shape-rendering: crispEdges;
+		}
+
+        .divTable{
+            display: table;
+            width: 100%;
+        }
+        .divTableRow {
+            display: table-row;
+        }
+        .divTableHeading {
+            background-color: #EEE;
+            display: table-header-group;
+        }
+        .divTableCell, .divTableHead {
+            border: 1px solid #999999;
+            display: table-cell;
+            padding: 3px 10px;
+        }
+        .divTableHeading {
+            background-color: #EEE;
+            display: table-header-group;
+            font-weight: bold;
+        }
+        .divTableFoot {
+            background-color: #EEE;
+            display: table-footer-group;
+            font-weight: bold;
+        }
+        #divTableBody {
+            display: table-row-group;
+        }
+
+        .headtags {
+            font-weight: bold;
+            width: 50px;
+        }
+
+        #svg {
+            margin-top: 30px;
+            min-height: 500px;
+            width: 70%;
+        }
+
+        #terror_list {
+            margin-top: 30px;
+            margin-left: 30px;
+            width: 800px;
+            color: #333; 
+            padding: 0;                       
+        }
+
+        .axis {
+            font: 10px sans-serif;
+        }
+        
+        .axis path,
+        .axis line {
+          fill: none;
+          stroke: #D4D8DA;
+          stroke-width: 2px;
+          shape-rendering: crispEdges;
+        }
+        
+        .line {
+          fill: none;
+          stroke: #6F257F;
+          stroke-width: 5px;
+        }
+        
+        .overlay {
+          fill: none;
+          pointer-events: all;
+        }
+        
+        .focus circle {
+          fill: #F1F3F3;
+          stroke: #6F257F;
+          stroke-width: 5px;
+        }
+          
+        .hover-line {
+          stroke: #6F257F;
+          stroke-width: 2px;
+          stroke-dasharray: 3,3;
+        }
+
+        #weatherDetail {
+            width: 500px;
+            height: 500px;
+            float: right;
+        }
+
+    </style>
+  </head>
+  <body>
+    <div id="weatherDetail">
+    </div>
+<script type="text/javascript">
+
+var parseDate = d3.timeParse("%Y");
+var parseDate2 = d3.timeParse("%Y%m%d");
+var parseDateSlash = d3.timeParse("%Y/%m/%d");
+
+var yearFormat = d3.timeFormat("%Y");
+var monthFormat = d3.timeFormat("%m");
+var monthDayFormat = d3.timeFormat("%m%d");
+var fullFormat = d3.timeFormat("%d/%m/%Y");
+
+var margin = {left: 50, right: 20, top: 20, bottom: 50 };
+
+var width = 1200 - margin.left - margin.right;
+var height = 500 - margin.top - margin.bottom;
+
+
+var max = 0;
+
+var xNudge = 50;
+var yNudge = 20;
+
+
+
+
+minDate = new Date();
+minDate.setFullYear(1984);
+maxDate = new Date();
+maxDate.setFullYear(2017);
+var x = d3.scaleTime()
+                .domain([minDate, maxDate])
+                .range([0,width]);
+                
+
+var xAxis = d3.axisBottom(x)
+                .scale(x)
+                .tickFormat(d3.timeFormat("%Y"))
+                .ticks(d3.timeYear);
+
+
+var svg = d3.select("body").append("svg").attr("id","svg");
+var chartGroup = svg.append("g").attr("class","chartGroup").attr("transform","translate("+xNudge+","+yNudge+")");             
+
+chartGroup.append("g")
+        .attr("class","axis x")
+        .attr("transform","translate(0,"+height+")")        
+        .call(xAxis);   
+
+/* MOUSEOVER DETAIL WEATHER GRAPH */
+
+var marginD = {top: 20, right: 20, bottom: 30, left: 30},
+widthD = 500 - marginD.left - marginD.right,
+heightD = 500 - marginD.top - marginD.bottom;
+
+// set the ranges
+
+minDateWeather = new Date("09 20");
+
+maxDateWeather = new Date("10 10");
+
+var xD = d3.scaleTime().range([0, widthD]).domain([minDateWeather, maxDateWeather]);
+var yD = d3.scaleLinear().range([heightD, 0]);
+
+var xAxisD = d3.axisBottom(xD)
+                .scale(xD)
+                .tickFormat(d3.timeFormat("%d"))
+                .ticks(21);
+
+var yAxisD = d3.axisLeft(yD);
+
+var svg2 = d3.select("#weatherDetail").append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+            .attr("class", "detailGraph")
+            .attr("transform",
+                "translate(" + margin.left + "," + margin.top + ")");
+
+// Add the X Axis
+svg2.append("g")
+    .attr("transform", "translate(0," + heightD + ")")
+    .call(xAxisD);
+
+// Add the Y Axis
+svg2.append("g")
+    .call(yAxisD);
+
+function filteredWeather(data, key) {
+   return data.filter(function (a) {    
+        return (yearFormat(a.MESS_DATUM) == key); 
+    });
+};
+
+        
+
+d3.csv("oktoberfestbesucher19852016.csv")
+.row(function(d) { return { year: parseDate(d.jahr), besucherg: +d.besuchergesamt }})
+.get(function(error, rows) {
+    max = d3.max(rows, function(d) { return d.besucherg; });
+
+    var y0 = d3.scaleLinear()
+                .domain([0,max])
+                .range([height,0]);
+
+    var yAxis0 = d3.axisLeft(y0);
+    
+
+    var line = d3.line()
+        .x(function(d){ return x(d.year); })
+        .y(function(d){ return y0(d.besucherg); })
+      
+        
+
+    chartGroup.append("path")
+        .attr("class","line")
+        .attr("d",function(d){ return line(rows)} ) 
+     
+
+    chartGroup.append("g")
+        .attr("class","axis bes y")
+        .call(yAxis0);
+
+
+        
+});
+
+d3.csv("produkt_klima_tag_19540601_20161231_03379.csv")
+.row(function(d) { return { MESS_DATUM: parseDate2(d["MESS_DATUM"]), RSK: +d.RSK }})
+.get(function(error, rows) {
+    filtered = rows.filter(function (a) {        
+        return (monthDayFormat(a.MESS_DATUM) >= 0920 && monthDayFormat(a.MESS_DATUM) <= 1010); 
+    });
+    
+    var oktDataAVG = d3.nest()
+    .key(function(d) { return yearFormat(d.MESS_DATUM);})
+    .rollup(function(d) { 
+        return d3.mean(d, function(g) {return g.RSK; });
+    }).entries(filtered);
+
+    max = d3.max(oktDataAVG, function(d) { return d.value; });
+    bisectDate = d3.bisector(function(d) { return d.key; }).left;
+
+    var y1 = d3.scaleLinear()
+                .domain([0,max])
+                .range([height,0]);
+
+    var yAxis1 = d3.axisRight(y1);
+
+    var line = d3.line()
+        .x(function(d){ 
+            time_key = parseDate(d.key);               
+            return x(time_key); 
+        })
+        .y(function(d){ return y1(d.value); })
+        console.log($("#btnDetail").is(":checked"));
+
+    // Prefill detail weather with first value 
+    inititateWeatherDetail(1985, filtered);
+   
+    chartGroup.append("path")
+        .attr("class","line b")
+        .attr("d",function(d){ return line(oktDataAVG); })
+        .attr("stroke", "blue")
+        .attr("stroke-width", 2)
+        .attr("fill", "none")
+
+    chartGroup.append("g")
+        .attr("class","axis weather y")
+        .call(yAxis1);
+
+    var focus = chartGroup.append("g")
+    .attr("class", "focus")
+    .style("display", "none");
+
+    focus.append("line")
+        .attr("class", "x-hover-line hover-line")
+        .attr("y1", 0)
+        .attr("y2", height);
+
+  /*   focus.append("line")
+        .attr("class", "y-hover-line hover-line")
+        .attr("x1", width)
+        .attr("x2", width); */
+
+    focus.append("circle")
+        .attr("r", 7.5);
+
+    focus.append("text")
+        .attr("x", 15)
+      	.attr("dy", ".31em");
+
+    svg.append("rect")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+        .attr("class", "overlay")
+        .attr("width", width)
+        .attr("height", height)
+        
+            .on("mouseover", function() { focus.style("display", null); })
+            .on("mouseout", function() { focus.style("display", "none"); })
+            .on("mousemove", mousemove);
+
+    function mousemove() {
+      var x0 = x.invert(d3.mouse(this)[0]),
+          i = bisectDate(oktDataAVG, yearFormat(x0), 1),          
+          d0 = oktDataAVG[i - 1],
+          d1 = oktDataAVG[i]
+          d = x0 - d0.key > d1.key - x0 ? d1 : d0;
+ 
+        focus.attr("transform", "translate(" + x(parseDate(d.key)) + "," + y1(d.value) + ")");
+        focus.select("text").text(function() { return d.key; });
+        focus.select(".x-hover-line").attr("y2", height - y1(d.value));
+        focus.select(".y-hover-line").attr("x2", width + width);
+      loadWeatherDetailGraph(d.key, filtered);
+    }    
+
+    function inititateWeatherDetail(key, data) {
+        var data = filteredWeather(data, key);
+        var valueline = d3.line()
+        .x(function(d) { return xD(d.MESS_DATUM); })
+        .y(function(d) { return yD(d.RSK); });
+        console.log(data);
+        svg2.append("path")
+            .attr("class", "line")
+            .attr("d", valueline(data));
+
+    }   
+});
+
+
+
+d3.csv("terrorism/Terror_WesternEU+NAOceana_50+.csv")
+.row(function(d) {return { idate: parseDateSlash(d.idate), country_txt: d.country_txt, region_txt: d.region_txt, city: d.city, lat: d.latitude, long: d.longitude, attacktype: d.attacktype1, targettype: d.targtype1_txt, target: d.target1, gname: d.gname, motive: d.motive, weapontype: d.weaptype1_txt, killed: d.nkill, wounded: d.nwound, propvalue: d.propvalue, propcomment: d.propcomment, addnotes: d.addnotes}})
+.get(function(error, rows) {
+    filteredT = rows.filter(function (a) {        
+        return (monthDayFormat(a.idate) <= 1010); 
+    });
+    
+    var terrorDataSum = d3.nest()
+    .key(function(d) { return yearFormat(d.idate);})
+    .rollup(function(d) { 
+        return d3.sum(d, function(g) {return 1;});
+    }).entries(filteredT);
+    
+    var y2 = d3.scaleLinear()
+                .domain([0,max])
+                .range([height,0]);
+
+    var yAxis2 = d3.axisRight(y2);
+
+    var bar = chartGroup.selectAll("rect")            
+    .data(terrorDataSum)
+    .enter()
+    .append('g')
+    bar.append('rect')            
+        .attr("x", function(d) {return x(parseDate(d.key)); })
+        .attr("y", function(d) { return y2(d.value); })
+        .attr("width", 15)
+        .attr("height", function(d) { return height - y2(d.value); })
+        .attr("fill", function(d) {
+                return "rgb(50,50,50)";
+        })
+        .on("click", function(d){
+            displayTerrorData(d, filteredT);            
+        })
+
+        bar.append("text")
+        .text(function(d) {                 
+                    return d.value;
+        })
+        .attr("text-anchor", "middle")
+        .attr("x", function(d) {return x(parseDate(d.key)); })
+        .attr("y", function(d) { return y2(d.value); })
+        .attr("font-family", "sans-serif")
+        .attr("font-size", "11px")
+        .attr("color", "red")              
+        .attr("z-index", 1000)              
+        .attr("fill", "red")
+
+});
+
+function displayTerrorData(barData, dataset) {
+    list = $("#divTableBody");
+    console.log(list.find(".variable"));
+    list.find(".variable").remove();
+    //filter the dataset by the barData
+
+    filtered = dataset.filter(function (a) {        
+        
+        return (yearFormat(a.idate) == barData.key); 
+    });
+    for (data of filtered) {
+
+        var row = $('<div class="divTableRow variable">');
+        list.append(row);
+        
+
+        Object.keys(data).forEach(function(key,index) {
+            value = data[key];
+            if (key == "idate") value = fullFormat(data[key]);
+            row.append("<div class='divTableCell "+key+"'>"+value+"</div>")
+        });            
+        list.append("</div>");
+    } 
+    
+   
+    
+}
+
+
+function loadWeatherDetailGraph(key, data) {
+
+    var data = filteredWeather(data, key);
+    // Scale the range of the data
+    xD.domain(d3.extent(data, function(d) { return d.MESS_DATUM; }));
+    yD.domain([0, d3.max(data, function(d) { return d.RSK; })]);
+
+    
+    // parse the date / time
+    var parseTime = d3.timeParse("%m");
+
+    // define the line
+    var valueline = d3.line()
+        .x(function(d) { return xD(d.MESS_DATUM); })
+        .y(function(d) { return yD(d.RSK); });
+        var svg2 = d3.select("#weatherDetail").transition();
+        // Make the changes
+        svg2.select(".line")   // change the line
+            .duration(150)
+            .attr("d", valueline(data));
+            svg2.select(".x.axis") // change the x axis
+            .duration(150)
+            .call(xAxisD);
+            svg2.select(".y.axis") // change the y axis
+            .duration(150)
+            .call(yAxisD);
+    
+
+
+ 
+}
+
+
+</script>
+
+    <div id="terror_list">
+        <span><h1>Terror Data Details:</h1></span>
+        <span>(click on Bar in graph to display information)</span>   
+        <div id="divTableBody">
+            <div class="divTableRow">
+                <div class="divTableCell headtags">Date</div>
+                <div class="divTableCell headtags">Country</div>
+                <div class="divTableCell headtags">Region</div>
+                <div class="divTableCell headtags">City</div>
+                <div class="divTableCell headtags">Latitude</div>
+                <div class="divTableCell headtags">Longitude</div>
+                <div class="divTableCell headtags">Type Of Attack</div>
+                <div class="divTableCell headtags">Type of Target</div>
+                <div class="divTableCell headtags">Target</div>
+                <div class="divTableCell headtags">Group Name</div>
+                <div class="divTableCell headtags">Motive</div>
+                <div class="divTableCell headtags">Type of Weapon</div>
+                <div class="divTableCell headtags">Killed</div>
+                <div class="divTableCell headtags">Wounded</div>
+                <div class="divTableCell headtags">Property Damage</div>
+                <div class="divTableCell headtags">Property Comment</div>
+                <div class="divTableCell headtags">Additional Note</div>
+            </div>
+        </div>     
+    </div>
+</body>
+

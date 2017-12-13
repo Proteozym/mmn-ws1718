@@ -1,0 +1,87 @@
+
+
+<!--<!doctype html>
+
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+
+  <title>InfoVis Project</title>
+  <meta name="description" content="InfoVis Project">
+  <meta name="author" content="Jonas Safranek">
+
+  <link rel="stylesheet" href="css/styles.css?v=1.0">
+
+  <script src="https://d3js.org/d3.v4.js"></script>
+</head>
+
+<body>
+  <script src="js/scripts.js"></script>
+</body>
+</html>-->
+
+<!DOCTYPE html>
+<svg width="960" height="500"></svg>
+<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/22CA4304-2DAB-B842-AC48-2E6DE58CE748/main.js" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://gc.kis.v2.scr.kaspersky-labs.com/847EC85ED6E2-84CA-248B-BAD2-4034AC22/abn/main.css"/><script src="https://d3js.org/d3.v4.min.js"></script>
+<script>
+
+var svg = d3.select("svg"),
+    margin = {top: 20, right: 20, bottom: 30, left: 50},
+    width = +svg.attr("width") - margin.left - margin.right,
+    height = +svg.attr("height") - margin.top - margin.bottom,
+    g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var x = d3.scaleTime()
+    .rangeRound([0, width]);
+
+var y = d3.scaleLinear()
+    .rangeRound([height, 0]);
+
+var line = d3.line()
+    .x(function(d) { return x(d.jahr); })
+    .y(function(d) { return y(d.besuchergesamt); });
+
+d3.csv("oktoberfestbesucher19852016.csv", function(d) {
+  
+  return {
+    jahr : +d.jahr,
+    dauer : +d.dauer,
+    besucher_gesamt : +d.besuchergesamt,
+    besucher_t : +d.besuchertag
+  };
+  
+}, function(error, d) {  
+    if (error) throw error;
+    render(d);
+  });
+
+ function render(data) {
+  x.domain(d3.extent(data, function(d) { return d.jahr; }));
+  y.domain(d3.extent(data, function(d) { return d.besuchergesamt; }));
+  g.append("g")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x));
+      
+
+  g.append("g")
+      .call(d3.axisLeft(y))
+    .append("text")
+      .attr("fill", "#000")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", "0.71em")
+      .attr("text-anchor", "end")
+      .text("Besucher Gesamt (mio)");
+
+  g.append("path")
+      
+      .attr("class", "line")
+      .attr("stroke", "steelblue")
+      .attr("stroke-linejoin", "round")
+      .attr("stroke-linecap", "round")
+      .attr("stroke-width", 1.5)
+      .attr("d", function(d) {console.log(line(data)); return line(data); });
+};
+
+</script>
